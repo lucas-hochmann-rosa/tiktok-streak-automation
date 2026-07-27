@@ -1,0 +1,13 @@
+node_modules/
+
+# Configuração local e backups — nunca versionar
+.env
+.env.*
+!.env.example
+
+# Perfil do navegador: contém a sessão logada
+.profile/
+
+# Prints de diagnóstico
+logs/
+*.log
