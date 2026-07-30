@@ -1,3 +1,4 @@
+import { firstVisible, typeLikeHuman } from "../core/human.js";
 import { escapeRegex, wait } from "../core/util.js";
 
 /**
@@ -19,22 +20,6 @@ export const SELECTORS = {
   sendButton: ['[data-e2e="message-send"]', 'button[type="submit"]'],
   messageBubbles: ['[data-e2e="chat-item"]', 'div[class*="DivChatItemWrapper"]'],
 };
-
-async function firstVisible(page, selectors, timeoutMs, description) {
-  const deadline = Date.now() + timeoutMs;
-
-  while (Date.now() < deadline) {
-    for (const selector of selectors) {
-      const locator = page.locator(selector).first();
-      if (await locator.isVisible().catch(() => false)) {
-        return locator;
-      }
-    }
-    await wait(250);
-  }
-
-  throw new Error(`${description} não encontrado(a) na página. Ajuste SELECTORS em src/flows/streak-flow.js.`);
-}
 
 async function countBubbles(page) {
   for (const selector of SELECTORS.messageBubbles) {
@@ -95,8 +80,7 @@ export async function sendMessage(page, text, timeoutMs) {
   await input.click();
   const reference = await countBubbles(page);
 
-  // insertText dispara eventos reais de input: funciona com emoji e com React.
-  await page.keyboard.insertText(text);
+  await typeLikeHuman(page, text);
   await wait(300);
   await page.keyboard.press("Enter");
 
