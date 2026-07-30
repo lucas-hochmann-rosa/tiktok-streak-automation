@@ -1,5 +1,5 @@
 import { firstVisible, typeLikeHuman } from "../core/human.js";
-import { escapeRegex, wait } from "../core/util.js";
+import { escapeRegex, wait, waitRange } from "../core/util.js";
 
 /**
  * Único ponto do projeto que conhece o HTML do TikTok.
@@ -31,15 +31,18 @@ async function countBubbles(page) {
   return { selector: null, total: 0 };
 }
 
-export async function openMessagesInbox(page, url) {
+export async function openMessagesInbox(page, url, pace) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
   if (page.url().toLowerCase().includes("/login")) {
     throw new Error("Redirecionado para a tela de login. Rode 'npm run login' novamente.");
   }
+
+  // Tempo de a página assentar e de uma pessoa olhar a lista de conversas.
+  await waitRange(pace.reading);
 }
 
-export async function openConversation(page, target, timeoutMs) {
+export async function openConversation(page, target, timeoutMs, pace) {
   const pattern = new RegExp(escapeRegex(target), "i");
   const deadline = Date.now() + timeoutMs;
 
@@ -51,6 +54,8 @@ export async function openConversation(page, target, timeoutMs) {
       if (await conversation.isVisible().catch(() => false)) {
         await conversation.click();
         await firstVisible(page, SELECTORS.messageInput, timeoutMs, "Campo de mensagem");
+        // Uma pessoa lê a conversa antes de responder.
+        await waitRange(pace.reading);
         return;
       }
 
@@ -74,14 +79,16 @@ export async function openConversation(page, target, timeoutMs) {
  * Retorna { confirmed } — false significa "enviado, mas não foi possível
  * verificar", e nunca dispara reenvio automático para evitar mensagem duplicada.
  */
-export async function sendMessage(page, text, timeoutMs) {
+export async function sendMessage(page, text, timeoutMs, pace) {
   const input = await firstVisible(page, SELECTORS.messageInput, timeoutMs, "Campo de mensagem");
 
   await input.click();
+  await waitRange(pace.preSend);
+
   const reference = await countBubbles(page);
 
-  await typeLikeHuman(page, text);
-  await wait(300);
+  await typeLikeHuman(page, text, pace);
+  await waitRange(pace.preSend);
   await page.keyboard.press("Enter");
 
   if (await waitForDelivery(page, input, reference, 15_000)) {
@@ -92,6 +99,7 @@ export async function sendMessage(page, text, timeoutMs) {
   if (remaining) {
     // Enter não enviou nesta versão da interface: tenta o botão.
     const button = await firstVisible(page, SELECTORS.sendButton, 5_000, "Botão de enviar");
+    await waitRange(pace.preSend);
     await button.click();
 
     if (await waitForDelivery(page, input, reference, 15_000)) {

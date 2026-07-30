@@ -50,6 +50,17 @@ function getPath(name, fallback) {
   return path.isAbsolute(value) ? value : path.resolve(ROOT_DIR, value);
 }
 
+function getRange(minName, maxName, minFallback, maxFallback) {
+  const min = getInt(minName, minFallback);
+  const max = getInt(maxName, maxFallback);
+
+  if (max < min) {
+    throw new Error(`${maxName} precisa ser maior ou igual a ${minName}.`);
+  }
+
+  return { min, max };
+}
+
 export function loadConfig() {
   const config = {
     targets: getList("TIKTOK_TARGETS", ","),
@@ -63,19 +74,19 @@ export function loadConfig() {
 
     timeoutMs: getInt("TIMEOUT_MS", 45_000),
 
-    // Pausa entre um destinatário e o próximo.
-    delayMs: {
-      min: getInt("DELAY_MIN_MS", 1_500),
-      max: getInt("DELAY_MAX_MS", 4_000),
+    // Ritmo humano: o objetivo não é ser lento, é não ser instantâneo.
+    // Ação instantânea é a assinatura mais óbvia de automação.
+    pace: {
+      typing: getRange("TYPING_MIN_MS", "TYPING_MAX_MS", 90, 260),
+      reading: getRange("READ_MIN_MS", "READ_MAX_MS", 1_800, 4_200),
+      preSend: getRange("PRE_SEND_MIN_MS", "PRE_SEND_MAX_MS", 800, 2_000),
+      betweenTargets: getRange("DELAY_MIN_MS", "DELAY_MAX_MS", 6_000, 18_000),
+      startJitterMs: getInt("START_JITTER_MAX_MS", 0),
     },
 
     dryRun: getBool("DRY_RUN", false),
     screenshotsDir: getPath("SCREENSHOT_DIR", "logs"),
   };
-
-  if (config.delayMs.max < config.delayMs.min) {
-    throw new Error("DELAY_MAX_MS precisa ser maior ou igual a DELAY_MIN_MS.");
-  }
 
   return config;
 }

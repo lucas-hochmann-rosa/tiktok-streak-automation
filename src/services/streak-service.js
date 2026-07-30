@@ -17,6 +17,8 @@ export class StreakService {
   }
 
   async run() {
+    await this.#startJitter();
+
     const { context, page } = await openBrowser(this.config);
 
     try {
@@ -26,7 +28,7 @@ export class StreakService {
         );
       }
 
-      await openMessagesInbox(page, this.config.messagesUrl);
+      await openMessagesInbox(page, this.config.messagesUrl, this.config.pace);
       log.success(`Sessão válida. ${this.config.targets.length} destinatário(s) na fila.`);
 
       const results = [];
@@ -45,7 +47,7 @@ export class StreakService {
 
   async #processTarget(page, target) {
     try {
-      await openConversation(page, target, this.config.timeoutMs);
+      await openConversation(page, target, this.config.timeoutMs, this.config.pace);
 
       if (this.config.dryRun) {
         log.warn(`${target}: DRY_RUN ativo, conversa aberta mas nada foi enviado.`);
@@ -53,7 +55,7 @@ export class StreakService {
       }
 
       const message = pickRandom(this.config.messages);
-      const { confirmed } = await sendMessage(page, message, this.config.timeoutMs);
+      const { confirmed } = await sendMessage(page, message, this.config.timeoutMs, this.config.pace);
 
       if (confirmed) {
         log.success(`${target}: enviado "${message}"`);
@@ -74,8 +76,22 @@ export class StreakService {
   }
 
   async #delayBetweenTargets() {
-    const delay = randomInt(this.config.delayMs.min, this.config.delayMs.max);
-    log.info(`Aguardando ${delay}ms antes do próximo destinatário.`);
+    const { betweenTargets } = this.config.pace;
+    const delay = randomInt(betweenTargets.min, betweenTargets.max);
+    log.info(`Aguardando ${Math.round(delay / 1000)}s antes do próximo destinatário.`);
+    await wait(delay);
+  }
+
+  /**
+   * Execução agendada dispara sempre no mesmo segundo, o que é um padrão
+   * fácil de notar. Um atraso aleatório no início quebra essa regularidade.
+   */
+  async #startJitter() {
+    const cap = this.config.pace.startJitterMs;
+    if (cap <= 0) return;
+
+    const delay = randomInt(0, cap);
+    log.info(`Atraso inicial de ${Math.round(delay / 1000)}s.`);
     await wait(delay);
   }
 
