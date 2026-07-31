@@ -1,6 +1,6 @@
 {
   "name": "tiktok-streak-automation",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Keeps your TikTok streak alive by sending the daily message automatically, powered by Playwright.",
   "type": "module",
@@ -9,7 +9,12 @@
     "node": ">=20"
   },
   "scripts": {
-    "setup": "playwright install chromium"
+    "setup": "playwright install chromium",
+    "login": "node main.js login",
+    "logout": "node main.js logout",
+    "start": "node main.js run",
+    "help": "node main.js help",
+    "check": "node --check main.js && node --check src/config/settings.js && node --check src/core/browser-session.js && node --check src/core/screenshots.js && node --check src/core/human.js && node --check src/core/logger.js && node --check src/core/util.js && node --check src/flows/streak-flow.js && node --check src/services/streak-service.js"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
