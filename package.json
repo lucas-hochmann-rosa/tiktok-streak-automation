@@ -1,6 +1,6 @@
 {
   "name": "tiktok-streak-automation",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Keeps your TikTok streak alive by sending the daily message automatically, powered by Playwright.",
   "type": "module",
