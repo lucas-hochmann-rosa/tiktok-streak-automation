@@ -1,9 +1,15 @@
+// Orquestra a execução completa: abre o navegador, confirma a sessão e
+// percorre a lista de destinatários chamando o fluxo de envio para cada um.
+// É o único ponto que sabe "o que fazer" — o "como fazer" fica em
+// src/flows/streak-flow.js.
+
 import { isAuthenticated, openBrowser } from "../core/browser-session.js";
 import { saveScreenshot } from "../core/screenshots.js";
 import { log } from "../core/logger.js";
 import { pickRandom, randomInt, wait } from "../core/util.js";
 import { openConversation, openMessagesInbox, sendMessage } from "../flows/streak-flow.js";
 
+// Status possíveis de cada destinatário ao final da execução.
 const STATUS = Object.freeze({
   SENT: "enviado",
   UNCONFIRMED: "não confirmado",
@@ -16,6 +22,11 @@ export class StreakService {
     this.config = config;
   }
 
+  /**
+   * Ponto de entrada principal: abre o navegador, verifica a sessão e envia
+   * a mensagem para cada destinatário configurado. Retorna um resumo com o
+   * resultado de cada um e uma flag `success` (false se houve alguma falha).
+   */
   async run() {
     await this.#startJitter();
 
@@ -33,6 +44,8 @@ export class StreakService {
 
       const results = [];
       for (const [index, target] of this.config.targets.entries()) {
+        // Não há pausa antes do primeiro destinatário: a leitura da caixa
+        // de mensagens já cumpriu esse papel em openMessagesInbox.
         if (index > 0) {
           await this.#delayBetweenTargets();
         }
@@ -45,6 +58,11 @@ export class StreakService {
     }
   }
 
+  /**
+   * Processa um único destinatário: abre a conversa, sorteia uma mensagem
+   * e envia. Qualquer erro é capturado aqui para não interromper os demais
+   * destinatários da fila, e gera um print de diagnóstico em `logs/`.
+   */
   async #processTarget(page, target) {
     try {
       await openConversation(page, target, this.config.timeoutMs, this.config.pace);
@@ -62,6 +80,7 @@ export class StreakService {
         return { target, status: STATUS.SENT, message };
       }
 
+      // Enviado mas não confirmado: nunca reenviar aqui, para não duplicar.
       log.warn(
         `${target}: mensagem "${message}" enviada, mas não foi possível confirmar na tela. ` +
           "Verifique manualmente antes de rodar de novo.",
@@ -75,6 +94,7 @@ export class StreakService {
     }
   }
 
+  /** Pausa aleatória entre o envio de um destinatário e o próximo. */
   async #delayBetweenTargets() {
     const { betweenTargets } = this.config.pace;
     const delay = randomInt(betweenTargets.min, betweenTargets.max);
@@ -84,7 +104,8 @@ export class StreakService {
 
   /**
    * Execução agendada dispara sempre no mesmo segundo, o que é um padrão
-   * fácil de notar. Um atraso aleatório no início quebra essa regularidade.
+   * fácil de notar. Um atraso aleatório no início (START_JITTER_MAX_MS)
+   * quebra essa regularidade. Desligado por padrão (cap = 0).
    */
   async #startJitter() {
     const cap = this.config.pace.startJitterMs;
@@ -95,6 +116,7 @@ export class StreakService {
     await wait(delay);
   }
 
+  /** Agrega os resultados individuais em um resumo e loga a contagem final. */
   #summarize(results) {
     const count = (status) => results.filter((item) => item.status === status).length;
     const failures = count(STATUS.FAILED);

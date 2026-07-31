@@ -1,3 +1,7 @@
+// Lê e valida todas as variáveis de ambiente do projeto, aplicando os
+// valores padrão documentados em .env.example. É o único módulo que
+// conhece o nome exato de cada variável de ambiente.
+
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -5,15 +9,18 @@ import dotenv from "dotenv";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
+// Raiz do projeto, usada para resolver caminhos relativos (.env, perfil, logs).
 export const ROOT_DIR = path.resolve(configDir, "..", "..");
 
 dotenv.config({ path: path.join(ROOT_DIR, ".env"), quiet: true });
 
+/** Lê uma variável de texto, com valor padrão caso não esteja definida. */
 function getText(name, fallback = "") {
   const value = process.env[name];
   return value === undefined ? fallback : String(value).trim();
 }
 
+/** Lê uma variável booleana, aceitando variações em português e inglês. */
 function getBool(name, fallback = false) {
   const value = getText(name).toLowerCase();
   if (!value) return fallback;
@@ -22,6 +29,7 @@ function getBool(name, fallback = false) {
   return fallback;
 }
 
+/** Lê uma variável inteira (ex.: milissegundos), validando o formato. */
 function getInt(name, fallback) {
   const value = getText(name);
   if (!value) return fallback;
@@ -33,6 +41,7 @@ function getInt(name, fallback) {
   return number;
 }
 
+/** Lê uma lista separada por `separator` (ex.: TIKTOK_TARGETS por vírgula). */
 function getList(name, separator, fallback = []) {
   const value = getText(name);
   if (!value) return fallback;
@@ -45,11 +54,13 @@ function getList(name, separator, fallback = []) {
   return items.length > 0 ? items : fallback;
 }
 
+/** Lê um caminho de arquivo/pasta, resolvendo relativo à raiz do projeto. */
 function getPath(name, fallback) {
   const value = getText(name, fallback);
   return path.isAbsolute(value) ? value : path.resolve(ROOT_DIR, value);
 }
 
+/** Lê um par min/max (ex.: TYPING_MIN_MS/TYPING_MAX_MS) como uma faixa. */
 function getRange(minName, maxName, minFallback, maxFallback) {
   const min = getInt(minName, minFallback);
   const max = getInt(maxName, maxFallback);
@@ -61,13 +72,16 @@ function getRange(minName, maxName, minFallback, maxFallback) {
   return { min, max };
 }
 
+/** Monta o objeto de configuração completo a partir do .env atual. */
 export function loadConfig() {
   const config = {
+    // Quem recebe a mensagem e quais mensagens podem ser sorteadas.
     targets: getList("TIKTOK_TARGETS", ","),
     messages: getList("TIKTOK_MESSAGES", "|", ["🔥"]),
     messagesUrl: getText("TIKTOK_MESSAGES_URL", "https://www.tiktok.com/messages?lang=pt-BR"),
     loginUrl: getText("TIKTOK_LOGIN_URL", "https://www.tiktok.com/login?lang=pt-BR"),
 
+    // Onde e como o navegador é aberto.
     profileDir: getPath("BROWSER_PROFILE_DIR", ".profile"),
     browserChannel: getText("BROWSER_CHANNEL", "msedge"),
     headless: getBool("HEADLESS", false),
@@ -84,6 +98,7 @@ export function loadConfig() {
       startJitterMs: getInt("START_JITTER_MAX_MS", 0),
     },
 
+    // Diagnóstico.
     dryRun: getBool("DRY_RUN", false),
     screenshotsDir: getPath("SCREENSHOT_DIR", "logs"),
   };
@@ -91,6 +106,7 @@ export function loadConfig() {
   return config;
 }
 
+/** Valida os campos obrigatórios para efetivamente enviar mensagens. */
 export function validateForRun(config) {
   if (config.targets.length === 0) {
     throw new Error(

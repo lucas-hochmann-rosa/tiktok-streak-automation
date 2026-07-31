@@ -1,11 +1,13 @@
+// Único módulo do projeto que conhece o HTML do TikTok: seletores da caixa
+// de mensagens e a lógica de abrir uma conversa e enviar uma mensagem.
+// Se a automação parar de funcionar, quase sempre é aqui que se corrige.
+
 import { firstVisible, typeLikeHuman } from "../core/human.js";
 import { escapeRegex, wait, waitRange } from "../core/util.js";
 
-/**
- * Único ponto do projeto que conhece o HTML do TikTok.
- * Se a automação parar de funcionar, quase sempre é aqui que se corrige:
- * cada entrada é uma lista de tentativas, da mais específica para a mais genérica.
- */
+// Cada campo é uma lista de tentativas, da mais específica (atributos
+// próprios do TikTok, como data-e2e) para a mais genérica (papel ARIA
+// ou classe CSS parcial), usada como último recurso.
 export const SELECTORS = {
   conversationItems: [
     '[data-e2e="chat-list-item"]',
@@ -21,6 +23,11 @@ export const SELECTORS = {
   messageBubbles: ['[data-e2e="chat-item"]', 'div[class*="DivChatItemWrapper"]'],
 };
 
+/**
+ * Conta quantas bolhas de mensagem existem na conversa atual, usando o
+ * primeiro seletor da lista que retornar algum resultado. Serve como
+ * "antes" para comparar com o "depois" e confirmar que a mensagem saiu.
+ */
 async function countBubbles(page) {
   for (const selector of SELECTORS.messageBubbles) {
     const total = await page.locator(selector).count();
@@ -31,6 +38,10 @@ async function countBubbles(page) {
   return { selector: null, total: 0 };
 }
 
+/**
+ * Navega até a caixa de mensagens do TikTok e confirma que a sessão ainda
+ * é válida (o TikTok redireciona para /login quando a sessão expirou).
+ */
 export async function openMessagesInbox(page, url, pace) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
@@ -42,6 +53,12 @@ export async function openMessagesInbox(page, url, pace) {
   await waitRange(pace.reading);
 }
 
+/**
+ * Localiza e abre a conversa com `target` (busca por texto, sem diferenciar
+ * maiúsculas/minúsculas). A lista de conversas é paginada e carrega mais
+ * itens conforme rola, então a busca tenta, rola um pouco e tenta de novo
+ * até encontrar ou estourar o timeout.
+ */
 export async function openConversation(page, target, timeoutMs, pace) {
   const pattern = new RegExp(escapeRegex(target), "i");
   const deadline = Date.now() + timeoutMs;
@@ -75,9 +92,16 @@ export async function openConversation(page, target, timeoutMs, pace) {
 }
 
 /**
- * Digita e envia a mensagem.
- * Retorna { confirmed } — false significa "enviado, mas não foi possível
- * verificar", e nunca dispara reenvio automático para evitar mensagem duplicada.
+ * Digita e envia a mensagem na conversa aberta.
+ *
+ * Fluxo: clica no campo, digita com ritmo humano, pressiona Enter e espera
+ * a entrega ser confirmada (nova bolha de mensagem ou campo esvaziado). Se
+ * o Enter não enviar (algumas versões da interface exigem clicar no botão),
+ * tenta o botão de enviar como segunda tentativa.
+ *
+ * Retorna { confirmed } — `false` significa "enviado, mas não foi possível
+ * verificar visualmente", e o chamador nunca deve reenviar automaticamente
+ * nesse caso, para evitar mensagem duplicada.
  */
 export async function sendMessage(page, text, timeoutMs, pace) {
   const input = await firstVisible(page, SELECTORS.messageInput, timeoutMs, "Campo de mensagem");
@@ -85,6 +109,7 @@ export async function sendMessage(page, text, timeoutMs, pace) {
   await input.click();
   await waitRange(pace.preSend);
 
+  // Guarda o estado da conversa antes de digitar, para comparar depois.
   const reference = await countBubbles(page);
 
   await typeLikeHuman(page, text, pace);
@@ -95,9 +120,9 @@ export async function sendMessage(page, text, timeoutMs, pace) {
     return { confirmed: true };
   }
 
+  // Se o campo ainda tem texto, o Enter provavelmente não enviou: tenta o botão.
   const remaining = (await input.innerText().catch(() => "")).trim();
   if (remaining) {
-    // Enter não enviou nesta versão da interface: tenta o botão.
     const button = await firstVisible(page, SELECTORS.sendButton, 5_000, "Botão de enviar");
     await waitRange(pace.preSend);
     await button.click();
@@ -110,6 +135,10 @@ export async function sendMessage(page, text, timeoutMs, pace) {
   return { confirmed: false };
 }
 
+/**
+ * Espera até `timeoutMs` por um sinal de que a mensagem foi entregue: ou
+ * uma nova bolha apareceu na conversa, ou o campo de digitação esvaziou.
+ */
 async function waitForDelivery(page, input, reference, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
 

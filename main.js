@@ -1,9 +1,14 @@
+// Ponto de entrada da CLI. Lê o comando passado em `process.argv` e delega
+// para a função correspondente. Sem argumento, o comando padrão é `run`.
+
 import { loadConfig, validateForRun } from "./src/config/settings.js";
 import { clearSession, isAuthenticated, openBrowser } from "./src/core/browser-session.js";
 import { log } from "./src/core/logger.js";
 import { wait } from "./src/core/util.js";
 import { StreakService } from "./src/services/streak-service.js";
 
+// Tempo máximo esperando o usuário terminar o login manual (captcha/2FA
+// incluídos) antes de desistir e pedir para rodar o comando de novo.
 const MANUAL_LOGIN_TIMEOUT_MS = 10 * 60 * 1_000;
 
 function showHelp() {
@@ -19,6 +24,11 @@ Configuração: copie .env.example para .env e ajuste TIKTOK_TARGETS.
 `);
 }
 
+/**
+ * Fica checando o cookie de sessão a cada 2s até detectar o login ou
+ * estourar o timeout. Se o usuário fechar a janela do navegador antes
+ * disso, `isAuthenticated` lança erro e a função retorna false.
+ */
 async function waitForManualLogin(context) {
   const deadline = Date.now() + MANUAL_LOGIN_TIMEOUT_MS;
 
@@ -35,6 +45,7 @@ async function waitForManualLogin(context) {
   return false;
 }
 
+/** Comando `login`: abre o navegador visível e espera o login manual. */
 async function loginCommand(config) {
   const { context, page } = await openBrowser(config, { headless: false });
 
@@ -61,6 +72,7 @@ async function loginCommand(config) {
   }
 }
 
+/** Comando `logout`: derruba a sessão salva, sem apagar o resto do perfil. */
 async function logoutCommand(config) {
   const { context } = await openBrowser(config, { headless: true });
 
@@ -73,6 +85,7 @@ async function logoutCommand(config) {
   }
 }
 
+/** Comando `run`: valida a configuração e executa o envio do dia. */
 async function runCommand(config) {
   validateForRun(config);
   const { success } = await new StreakService(config).run();
@@ -85,6 +98,7 @@ const COMMANDS = {
   logout: logoutCommand,
 };
 
+/** Lê o comando da linha de comando e despacha para a função correspondente. */
 async function main() {
   const command = (process.argv[2] ?? "run").toLowerCase();
 
@@ -110,6 +124,8 @@ main()
   .catch((error) => {
     log.error(error?.message ?? String(error));
 
+    // Mensagem mais clara para o erro mais comum: perfil já aberto em
+    // outra instância do Playwright/navegador.
     if (/ProcessSingleton|profile.*use|SingletonLock/i.test(error?.message ?? "")) {
       log.info("O perfil já está aberto em outro processo. Feche a janela anterior e tente de novo.");
     }

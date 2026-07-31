@@ -13,6 +13,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# A pasta do projeto é a pasta pai deste script (scripts/..).
 $root = Split-Path -Parent $PSScriptRoot
 $node = (Get-Command node -ErrorAction SilentlyContinue).Source
 
@@ -20,8 +21,11 @@ if (-not $node) {
     throw "Node.js não encontrado no PATH. Instale o Node 20+ e tente de novo."
 }
 
+# Ação: roda "node main.js run" a partir da pasta do projeto.
 $action = New-ScheduledTaskAction -Execute $node -Argument "main.js run" -WorkingDirectory $root
+# Gatilho: todo dia, no horário informado em -Time.
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
+# Roda mesmo se o horário passar com o PC desligado, e não interrompe por bateria.
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 
 Register-ScheduledTask `

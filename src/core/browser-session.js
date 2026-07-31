@@ -1,7 +1,13 @@
+// Abertura do navegador em modo "perfil persistente": cookies e demais dados
+// de sessão ficam salvos em disco, então o login manual só precisa acontecer
+// uma vez (até a sessão expirar do lado do TikTok).
+
 import fs from "node:fs/promises";
 
 import { chromium } from "playwright";
 
+// Flags que reduzem sinais óbvios de automação e evitam telas de primeira
+// execução do navegador, que atrapalhariam um perfil rodando sem interação.
 const DEFAULT_ARGS = [
   "--disable-blink-features=AutomationControlled",
   "--no-first-run",
@@ -9,8 +15,9 @@ const DEFAULT_ARGS = [
 ];
 
 /**
- * Abre um contexto persistente: cookies e sessão ficam salvos em disco,
- * então o login manual precisa ser feito apenas uma vez.
+ * Abre um contexto persistente do Playwright usando a pasta de perfil
+ * definida em `config.profileDir`. Reaproveita a primeira aba já aberta
+ * pelo Chromium em vez de criar uma nova.
  */
 export async function openBrowser(config, { headless = config.headless } = {}) {
   await fs.mkdir(config.profileDir, { recursive: true });
@@ -19,6 +26,8 @@ export async function openBrowser(config, { headless = config.headless } = {}) {
     headless,
     args: [...DEFAULT_ARGS],
     locale: "pt-BR",
+    // headless usa um viewport fixo; com janela visível, null deixa o
+    // Playwright acompanhar o tamanho real da janela do sistema.
     viewport: headless ? { width: 1366, height: 900 } : null,
   };
 
@@ -38,15 +47,19 @@ export async function openBrowser(config, { headless = config.headless } = {}) {
 }
 
 /**
- * Verifica o cookie de sessão do TikTok em vez de inspecionar textos da
- * interface, que mudam de idioma e de versão.
+ * Verifica se existe uma sessão válida checando o cookie `sessionid` do
+ * TikTok, em vez de inspecionar textos da interface, que mudam de idioma
+ * e de versão com frequência.
  */
 export async function isAuthenticated(context) {
   const cookies = await context.cookies("https://www.tiktok.com");
   return cookies.some((cookie) => cookie.name === "sessionid" && Boolean(cookie.value));
 }
 
-/** Derruba a sessão mantendo o perfil: útil para forçar um login do zero. */
+/**
+ * Remove os cookies da sessão atual, mas mantém o restante do perfil
+ * (cache, preferências). Útil para forçar um novo login sem apagar a pasta.
+ */
 export async function clearSession(context) {
   await context.clearCookies();
 }
