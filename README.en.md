@@ -315,7 +315,7 @@ Licensed under MIT. Feel free to use, modify, and distribute, while keeping the 
 **Lucas Hochmann Rosa**
 
 - Repository: <https://github.com/lucas-hochmann-rosa/tiktok-streak-automation>
-- GitHub: <https://github.com/hrlucas>
+- GitHub: <https://github.com/lucas-hochmann-rosa>
 - LinkedIn: <https://www.linkedin.com/in/lucas-hochmann-rosa>
 
 ---
