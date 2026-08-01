@@ -52,7 +52,7 @@ Source code is written in English (identifiers, functions, structure), with comm
 - Persistent session via `launchPersistentContext`: one-time manual login, no stored credentials.
 - Session detection through the `sessionid` cookie, instead of UI text that changes with language and app version.
 - Sends to multiple recipients, picking a random message from a configurable list.
-- Human pacing: character-by-character typing, reading pauses, and variable delays between actions — no timing is fixed.
+- Human pacing: character-by-character typing, reading pauses, and variable delays between actions - no timing is fixed.
 - Automatic screenshot to `logs/` whenever a send fails or can't be confirmed.
 - Never resends an unconfirmed message, to avoid duplicates.
 - Ready-to-use scheduling script for Windows Task Scheduler.
@@ -142,7 +142,7 @@ tiktok-streak-automation/
 TikTok's automated login is fragile (captcha, e-mail/phone verification, anti-bot blocking) and would require storing the account password in plain text. This project takes a different approach:
 
 1. `npm run login` opens a browser with its own **persistent profile** (`.profile/` folder). Login happens manually, as usual.
-2. The session is saved to that folder — cookies, not a password.
+2. The session is saved to that folder - cookies, not a password.
 3. `npm start` reopens the same profile, already authenticated, opens each conversation, and sends the message.
 
 No credentials live in the repository, login only happens once (until it expires), and the daily run takes just a few seconds.
@@ -152,7 +152,7 @@ No credentials live in the repository, login only happens once (until it expires
 ## 📐 Project Ground Rules
 
 - Identifiers, functions, and file structure stay in English.
-- Code comments stay in Portuguese, reserved for decisions that aren't obvious — the "why", not the "what".
+- Code comments stay in Portuguese, reserved for decisions that aren't obvious - the "why", not the "what".
 - All interaction with TikTok's HTML is isolated in `src/flows/streak-flow.js`, with selectors in a fallback chain.
 - No credentials are stored: the session comes from a manual login into a persistent profile.
 - No unconfirmed send is ever retried automatically.
@@ -199,10 +199,10 @@ TIKTOK_MESSAGES=🔥|🔥🔥|hey|good morning
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `TIKTOK_TARGETS` | — | Recipients, comma-separated. **Required** |
+| `TIKTOK_TARGETS` | - | Recipients, comma-separated. **Required** |
 | `TIKTOK_MESSAGES` | `🔥` | Candidate messages, separated by `\|` |
 | `BROWSER_CHANNEL` | `msedge` | `msedge`, `chrome`, or empty (Playwright's Chromium) |
-| `HEADLESS` | `false` | `true` runs without opening a window — faster |
+| `HEADLESS` | `false` | `true` runs without opening a window - faster |
 | `BROWSER_PROFILE_DIR` | `.profile` | Where the logged-in session is stored |
 | `TIMEOUT_MS` | `45000` | Maximum wait time per element |
 | `TYPING_MIN_MS` / `TYPING_MAX_MS` | `90` / `260` | Delay between each typed character |
@@ -235,7 +235,7 @@ The command exits with code `1` if any recipient fails, which makes it easy to d
 
 ## 📜 Run History
 
-Every run — fully sent, partially failed, or entirely failed — becomes a line in `logs/history.jsonl`. The file is [JSON Lines](https://jsonlines.org/): each line is an independent JSON object, so appending a new run never requires rewriting the whole file.
+Every run - fully sent, partially failed, or entirely failed - becomes a line in `logs/history.jsonl`. The file is [JSON Lines](https://jsonlines.org/): each line is an independent JSON object, so appending a new run never requires rewriting the whole file.
 
 ```json
 {"timestamp":"2026-08-01T09:00:04.120Z","success":true,"results":[{"target":"Maria","status":"enviado","message":"🔥"}],"durationMs":18342}
@@ -254,7 +254,7 @@ Instant action is the most obvious signature of automation. That's why the bot d
 - pauses when loading the inbox and opening a conversation, before starting to type;
 - waits a variable interval before pressing Enter and between one recipient and the next.
 
-None of these timings are fixed — all are randomized within a range, so two runs never share the same cadence. A single send usually takes 10 to 20 seconds.
+None of these timings are fixed - all are randomized within a range, so two runs never share the same cadence. A single send usually takes 10 to 20 seconds.
 
 For scheduled runs, it's worth enabling `START_JITTER_MAX_MS` (e.g. `900000` for up to 15 minutes): firing at exactly 09:00:00 every day is a predictable pattern in itself.
 
@@ -281,7 +281,7 @@ For scheduled runs, set `HEADLESS=true` in `.env`.
 
 ## 🔧 When It Stops Working
 
-TikTok changes its interface frequently. All coupling with the HTML is isolated in a single place: the `SELECTORS` constant in [`src/flows/streak-flow.js`](src/flows/streak-flow.js). Each field is a list of attempts, from most specific to most generic — usually adding a new selector at the top of the list is enough.
+TikTok changes its interface frequently. All coupling with the HTML is isolated in a single place: the `SELECTORS` constant in [`src/flows/streak-flow.js`](src/flows/streak-flow.js). Each field is a list of attempts, from most specific to most generic - usually adding a new selector at the top of the list is enough.
 
 When a send fails, a screenshot is saved to `logs/`, which usually shows right away what changed.
 
@@ -300,7 +300,7 @@ Other common cases:
 
 Personal tool built to automate a repetitive task on **your own account**. Automating interactions may go against [TikTok's Terms of Service](https://www.tiktok.com/legal/terms-of-service) and, in the worst case, lead to account restrictions. Use at your own risk, in moderation, and only with people who already talk to you.
 
-Don't commit `.env`, `.profile/`, or `logs/` — all already covered by `.gitignore`.
+Don't commit `.env`, `.profile/`, or `logs/` - all already covered by `.gitignore`.
 
 ---
 

@@ -52,7 +52,7 @@ O código-fonte é escrito em inglês (identificadores, funções, estrutura), c
 - Sessão persistente via `launchPersistentContext`: login manual único, sem credenciais armazenadas.
 - Detecção de sessão pelo cookie `sessionid`, em vez de textos de interface que mudam de idioma e versão.
 - Envio para múltiplos destinatários, com mensagem sorteada de uma lista configurável.
-- Ritmo humano: digitação caractere a caractere, pausas de leitura e intervalos variáveis entre ações — nenhum tempo é fixo.
+- Ritmo humano: digitação caractere a caractere, pausas de leitura e intervalos variáveis entre ações - nenhum tempo é fixo.
 - Print automático da tela em `logs/` sempre que um envio falha ou não pode ser confirmado.
 - Nunca reenvia uma mensagem não confirmada, para evitar duplicidade.
 - Script de agendamento pronto para o Agendador de Tarefas do Windows.
@@ -142,7 +142,7 @@ tiktok-streak-automation/
 O login automatizado do TikTok é frágil (captcha, verificação por e-mail/telefone, bloqueio anti-bot) e exigiria guardar a senha da conta em texto plano. Este projeto faz diferente:
 
 1. `npm run login` abre um navegador com um **perfil persistente** próprio (pasta `.profile/`). O login é feito manualmente, como de costume.
-2. A sessão fica salva nessa pasta — cookies, não senha.
+2. A sessão fica salva nessa pasta - cookies, não senha.
 3. `npm start` reabre o mesmo perfil, já autenticado, abre cada conversa e envia a mensagem.
 
 Nenhuma credencial fica no repositório, o login só acontece uma vez (até expirar), e a execução diária leva poucos segundos.
@@ -152,7 +152,7 @@ Nenhuma credencial fica no repositório, o login só acontece uma vez (até expi
 ## 📐 Regras da construção do projeto
 
 - Identificadores, funções e estrutura de arquivos ficam em inglês.
-- Comentários no código ficam em português, reservados para decisões não óbvias — o "porquê", não o "o quê".
+- Comentários no código ficam em português, reservados para decisões não óbvias - o "porquê", não o "o quê".
 - Toda interação com o HTML do TikTok fica isolada em `src/flows/streak-flow.js`, com seletores em cadeia de fallback.
 - Nenhuma credencial é armazenada: a sessão vem de login manual em perfil persistente.
 - Nenhum envio não confirmado é reenviado automaticamente.
@@ -199,10 +199,10 @@ TIKTOK_MESSAGES=🔥|🔥🔥|oi|bom dia
 
 | Variável | Padrão | Para que serve |
 | --- | --- | --- |
-| `TIKTOK_TARGETS` | — | Destinatários, separados por vírgula. **Obrigatório** |
+| `TIKTOK_TARGETS` | - | Destinatários, separados por vírgula. **Obrigatório** |
 | `TIKTOK_MESSAGES` | `🔥` | Mensagens candidatas, separadas por `\|` |
 | `BROWSER_CHANNEL` | `msedge` | `msedge`, `chrome` ou vazio (Chromium do Playwright) |
-| `HEADLESS` | `false` | `true` roda sem abrir janela — mais rápido |
+| `HEADLESS` | `false` | `true` roda sem abrir janela - mais rápido |
 | `BROWSER_PROFILE_DIR` | `.profile` | Onde a sessão logada é guardada |
 | `TIMEOUT_MS` | `45000` | Tempo máximo de espera por elemento |
 | `TYPING_MIN_MS` / `TYPING_MAX_MS` | `90` / `260` | Intervalo entre cada caractere digitado |
@@ -235,7 +235,7 @@ O comando sai com código `1` se algum destinatário falhar, o que permite detec
 
 ## 📜 Histórico de execuções
 
-Toda execução — enviada com sucesso, parcial ou totalmente falha — vira uma linha em `logs/history.jsonl`. O arquivo é [JSON Lines](https://jsonlines.org/): cada linha é um objeto JSON independente, então nunca precisa reescrever o arquivo inteiro para acrescentar uma execução nova.
+Toda execução - enviada com sucesso, parcial ou totalmente falha - vira uma linha em `logs/history.jsonl`. O arquivo é [JSON Lines](https://jsonlines.org/): cada linha é um objeto JSON independente, então nunca precisa reescrever o arquivo inteiro para acrescentar uma execução nova.
 
 ```json
 {"timestamp":"2026-08-01T09:00:04.120Z","success":true,"results":[{"target":"Maria","status":"enviado","message":"🔥"}],"durationMs":18342}
@@ -254,7 +254,7 @@ Toda ação instantânea é a assinatura mais óbvia de automação. Por isso o 
 - pausa ao carregar a caixa de mensagens e ao abrir a conversa, antes de começar a escrever;
 - espera um intervalo variável antes de apertar Enter e entre um destinatário e outro.
 
-Nenhum desses tempos é fixo — todos são sorteados dentro de uma faixa, para que duas execuções nunca tenham a mesma cadência. Um envio costuma levar de 10 a 20 segundos.
+Nenhum desses tempos é fixo - todos são sorteados dentro de uma faixa, para que duas execuções nunca tenham a mesma cadência. Um envio costuma levar de 10 a 20 segundos.
 
 Para execuções agendadas, vale ativar `START_JITTER_MAX_MS` (ex.: `900000` para até 15 minutos): disparar exatamente às 09:00:00 todo dia é um padrão previsível.
 
@@ -281,7 +281,7 @@ Para execuções agendadas, coloque `HEADLESS=true` no `.env`.
 
 ## 🔧 Quando parar de funcionar
 
-O TikTok muda a interface com frequência. Todo o acoplamento com o HTML está isolado em um único lugar: a constante `SELECTORS` em [`src/flows/streak-flow.js`](src/flows/streak-flow.js). Cada campo é uma lista de tentativas, da mais específica para a mais genérica — normalmente basta acrescentar um seletor novo no topo da lista.
+O TikTok muda a interface com frequência. Todo o acoplamento com o HTML está isolado em um único lugar: a constante `SELECTORS` em [`src/flows/streak-flow.js`](src/flows/streak-flow.js). Cada campo é uma lista de tentativas, da mais específica para a mais genérica - normalmente basta acrescentar um seletor novo no topo da lista.
 
 Quando um envio falha, um print da tela é salvo em `logs/`, o que costuma mostrar na hora o que mudou.
 
@@ -300,7 +300,7 @@ Outros casos comuns:
 
 Ferramenta de uso pessoal, feita para automatizar uma tarefa repetitiva na **sua própria conta**. Automatizar interações pode contrariar os [Termos de Serviço do TikTok](https://www.tiktok.com/legal/terms-of-service) e, no limite, levar a restrições na conta. Use por sua conta e risco, com moderação e apenas com pessoas que já conversam com você.
 
-Não versione `.env`, `.profile/` nem `logs/` — todos já estão no `.gitignore`.
+Não versione `.env`, `.profile/` nem `logs/` - todos já estão no `.gitignore`.
 
 ---
 
