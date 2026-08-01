@@ -98,9 +98,9 @@ export function loadConfig() {
       startJitterMs: getInt("START_JITTER_MAX_MS", 0),
     },
 
-    // Diagnóstico.
-    dryRun: getBool("DRY_RUN", false),
+    // Diagnóstico: print em falha e histórico incremental de execuções.
     screenshotsDir: getPath("SCREENSHOT_DIR", "logs"),
+    historyPath: getPath("HISTORY_LOG_PATH", "logs/history.jsonl"),
   };
 
   return config;

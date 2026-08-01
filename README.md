@@ -24,6 +24,21 @@
 
 ---
 
+## ⚡ Quick start
+
+```bash
+git clone https://github.com/lucas-hochmann-rosa/tiktok-streak-automation.git
+cd tiktok-streak-automation
+npm install
+cp .env.example .env    # edite TIKTOK_TARGETS
+npm run login            # uma vez só
+npm start                # envia a mensagem diária
+```
+
+Detalhes de cada passo nas seções abaixo.
+
+---
+
 ## 📌 Visão Geral
 
 Ferramenta de linha de comando em Node.js que reaproveita uma sessão logada do TikTok para abrir conversas e enviar a mensagem diária sem intervenção manual. Sem senha no `.env`, sem token, sem API não oficial: a sessão vem de um login feito uma única vez pelo próprio usuário, em um perfil de navegador persistente.
@@ -55,6 +70,7 @@ O código-fonte é escrito em inglês (identificadores, funções, estrutura), c
 - [Instalação](#-instalação)
 - [Configuração de Ambiente](#-configuração-de-ambiente)
 - [Execução](#-execução)
+- [Histórico de execuções](#-histórico-de-execuções)
 - [Ritmo humano](#-ritmo-humano)
 - [Agendamento diário (Windows)](#-agendamento-diário-windows)
 - [Quando parar de funcionar](#-quando-parar-de-funcionar)
@@ -76,7 +92,9 @@ tiktok-streak-automation/
 │   │   └── settings.js
 │   ├── core/
 │   │   ├── browser-session.js
+│   │   ├── history.js
 │   │   ├── human.js
+│   │   ├── locator.js
 │   │   ├── logger.js
 │   │   ├── screenshots.js
 │   │   └── util.js
@@ -97,7 +115,9 @@ tiktok-streak-automation/
 | `main.js` | CLI: `run` \| `login` \| `logout` \| `help`. |
 | `src/config/settings.js` | Leitura e validação do `.env`. |
 | `src/core/browser-session.js` | Abertura do perfil persistente e checagem de sessão via cookie. |
-| `src/core/human.js` | Digitação com ritmo humano e busca de seletores com fallback. |
+| `src/core/history.js` | Histórico incremental das execuções em `logs/history.jsonl`. |
+| `src/core/human.js` | Digitação com ritmo humano, caractere a caractere. |
+| `src/core/locator.js` | Busca resiliente de elementos, com cadeia de seletores e retry. |
 | `src/core/screenshots.js` | Print de diagnóstico quando um envio falha. |
 | `src/core/logger.js` | Log com horário no console. |
 | `src/core/util.js` | Pausas, sorteio, escape de regex. |
@@ -190,8 +210,8 @@ TIKTOK_MESSAGES=🔥|🔥🔥|oi|bom dia
 | `PRE_SEND_MIN_MS` / `PRE_SEND_MAX_MS` | `800` / `2000` | Pausa antes de apertar Enter |
 | `DELAY_MIN_MS` / `DELAY_MAX_MS` | `6000` / `18000` | Pausa entre destinatários |
 | `START_JITTER_MAX_MS` | `0` | Atraso aleatório no início da execução |
-| `DRY_RUN` | `false` | `true` abre a conversa mas não envia |
 | `SCREENSHOT_DIR` | `logs` | Onde salvar prints quando algo falha |
+| `HISTORY_LOG_PATH` | `logs/history.jsonl` | Arquivo do histórico incremental de execuções |
 
 ---
 
@@ -209,9 +229,19 @@ npm run logout   # derruba a sessão salva
 npm run help     # lista os comandos
 ```
 
-Antes do primeiro envio de verdade, vale testar com `DRY_RUN=true`: o robô abre cada conversa e mostra no log o que faria, sem mandar nada.
-
 O comando sai com código `1` se algum destinatário falhar, o que permite detectar problemas em execuções agendadas.
+
+---
+
+## 📜 Histórico de execuções
+
+Toda execução — enviada com sucesso, parcial ou totalmente falha — vira uma linha em `logs/history.jsonl`. O arquivo é [JSON Lines](https://jsonlines.org/): cada linha é um objeto JSON independente, então nunca precisa reescrever o arquivo inteiro para acrescentar uma execução nova.
+
+```json
+{"timestamp":"2026-08-01T09:00:04.120Z","success":true,"results":[{"target":"Maria","status":"enviado","message":"🔥"}],"durationMs":18342}
+```
+
+Útil para responder "quando foi a última vez que rodou de verdade?" sem precisar guardar o terminal aberto. O caminho é configurável em `HISTORY_LOG_PATH`.
 
 ---
 
@@ -274,6 +304,12 @@ Não versione `.env`, `.profile/` nem `logs/` — todos já estão no `.gitignor
 
 ---
 
+## 📄 Licença
+
+Licenciado sob MIT. Sinta-se livre para usar, modificar e distribuir, mantendo o aviso de copyright e atribuindo crédito a **Lucas Hochmann Rosa**.
+
+---
+
 ## 👨‍💻 Autor
 
 **Lucas Hochmann Rosa**
@@ -281,11 +317,5 @@ Não versione `.env`, `.profile/` nem `logs/` — todos já estão no `.gitignor
 - Repositório: <https://github.com/lucas-hochmann-rosa/tiktok-streak-automation>
 - GitHub: <https://github.com/hrlucas>
 - LinkedIn: <https://www.linkedin.com/in/lucas-hochmann-rosa>
-
----
-
-## 📄 Licença
-
-Licenciado sob MIT. Sinta-se livre para usar, modificar e distribuir, mantendo o aviso de copyright e atribuindo crédito a **Lucas Hochmann Rosa**.
 
 ---

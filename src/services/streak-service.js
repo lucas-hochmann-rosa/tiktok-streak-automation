@@ -5,6 +5,7 @@
 
 import { isAuthenticated, openBrowser } from "../core/browser-session.js";
 import { saveScreenshot } from "../core/screenshots.js";
+import { recordRun } from "../core/history.js";
 import { log } from "../core/logger.js";
 import { pickRandom, randomInt, wait } from "../core/util.js";
 import { openConversation, openMessagesInbox, sendMessage } from "../flows/streak-flow.js";
@@ -13,7 +14,6 @@ import { openConversation, openMessagesInbox, sendMessage } from "../flows/strea
 const STATUS = Object.freeze({
   SENT: "enviado",
   UNCONFIRMED: "não confirmado",
-  SIMULATED: "simulado",
   FAILED: "falhou",
 });
 
@@ -26,11 +26,14 @@ export class StreakService {
    * Ponto de entrada principal: abre o navegador, verifica a sessão e envia
    * a mensagem para cada destinatário configurado. Retorna um resumo com o
    * resultado de cada um e uma flag `success` (false se houve alguma falha).
+   * Toda execução — inclusive uma falha antes do primeiro envio — vira uma
+   * linha no histórico em `config.historyPath`.
    */
   async run() {
     await this.#startJitter();
 
     const { context, page } = await openBrowser(this.config);
+    const startedAt = Date.now();
 
     try {
       if (!(await isAuthenticated(context))) {
@@ -52,7 +55,12 @@ export class StreakService {
         results.push(await this.#processTarget(page, target));
       }
 
-      return this.#summarize(results);
+      const summary = this.#summarize(results);
+      await this.#recordHistory(startedAt, summary);
+      return summary;
+    } catch (error) {
+      await this.#recordHistory(startedAt, { success: false, results: [], error: error.message });
+      throw error;
     } finally {
       await context.close();
     }
@@ -66,11 +74,6 @@ export class StreakService {
   async #processTarget(page, target) {
     try {
       await openConversation(page, target, this.config.timeoutMs, this.config.pace);
-
-      if (this.config.dryRun) {
-        log.warn(`${target}: DRY_RUN ativo, conversa aberta mas nada foi enviado.`);
-        return { target, status: STATUS.SIMULATED };
-      }
 
       const message = pickRandom(this.config.messages);
       const { confirmed } = await sendMessage(page, message, this.config.timeoutMs, this.config.pace);
@@ -123,10 +126,18 @@ export class StreakService {
 
     log.info(
       `Resumo: ${count(STATUS.SENT)} enviado(s), ` +
-        `${count(STATUS.UNCONFIRMED)} não confirmado(s), ` +
-        `${count(STATUS.SIMULATED)} simulado(s), ${failures} falha(s).`,
+        `${count(STATUS.UNCONFIRMED)} não confirmado(s), ${failures} falha(s).`,
     );
 
     return { results, success: failures === 0 };
+  }
+
+  /** Acrescenta a execução ao histórico incremental, sem derrubar o processo se falhar. */
+  async #recordHistory(startedAt, summary) {
+    try {
+      await recordRun({ ...summary, durationMs: Date.now() - startedAt }, this.config.historyPath);
+    } catch (error) {
+      log.warn(`Não foi possível gravar o histórico: ${error.message}`);
+    }
   }
 }
