@@ -2,7 +2,8 @@
 // de mensagens e a lógica de abrir uma conversa e enviar uma mensagem.
 // Se a automação parar de funcionar, quase sempre é aqui que se corrige.
 
-import { firstVisible, typeLikeHuman } from "../core/human.js";
+import { typeLikeHuman } from "../core/human.js";
+import { firstVisible } from "../core/locator.js";
 import { escapeRegex, wait, waitRange } from "../core/util.js";
 
 // Cada campo é uma lista de tentativas, da mais específica (atributos
