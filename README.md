@@ -24,7 +24,7 @@
 
 ---
 
-## ⚡ Quick start
+## ⚡ Início
 
 ```bash
 git clone https://github.com/lucas-hochmann-rosa/tiktok-streak-automation.git
@@ -315,7 +315,7 @@ Licenciado sob MIT. Sinta-se livre para usar, modificar e distribuir, mantendo o
 **Lucas Hochmann Rosa**
 
 - Repositório: <https://github.com/lucas-hochmann-rosa/tiktok-streak-automation>
-- GitHub: <https://github.com/hrlucas>
+- GitHub: <https://github.com/lucas-hochmann-rosa>
 - LinkedIn: <https://www.linkedin.com/in/lucas-hochmann-rosa>
 
 ---
